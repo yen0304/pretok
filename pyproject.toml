@@ -1,0 +1,215 @@
+[project]
+name = "pretok"
+version = "0.1.0"
+description = "Universal pre-token language adaptation layer for text-based LLMs"
+readme = "README.md"
+authors = [
+    { name = "yen0304", email = "asce55123@gmail.com" }
+]
+requires-python = ">=3.11"
+license = { text = "MIT" }
+keywords = ["llm", "translation", "nlp", "language-detection", "pre-tokenization"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Linguistic",
+    "Typing :: Typed",
+]
+dependencies = [
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# Language detection backends
+fasttext = ["fasttext-wheel>=0.9.2"]
+langdetect = ["langdetect>=1.0.9"]
+
+# Translation backends - local models
+nllb = ["transformers>=4.30", "torch>=2.0", "sentencepiece>=0.1.99"]
+m2m100 = ["transformers>=4.30", "torch>=2.0", "sentencepiece>=0.1.99"]
+
+# Translation backends - APIs
+openai = ["openai>=1.0"]
+google = ["google-cloud-translate>=3.0"]
+deepl = ["deepl>=1.0"]
+
+# Caching backends
+redis = ["redis>=4.0"]
+
+# All detection backends
+detection = ["pretok[fasttext,langdetect]"]
+
+# All local translation models
+local = ["pretok[nllb,m2m100]"]
+
+# All API translation backends
+api = ["pretok[openai,google,deepl]"]
+
+# All optional dependencies
+all = ["pretok[detection,local,api,redis]"]
+
+# Development dependencies
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=4.0",
+    "hypothesis>=6.0",
+    "mypy>=1.8",
+    "ruff>=0.4",
+    "pre-commit>=3.0",
+]
+
+# Documentation
+docs = [
+    "mkdocs>=1.5",
+    "mkdocs-material>=9.0",
+    "mkdocstrings[python]>=0.24",
+]
+
+[project.urls]
+Homepage = "https://github.com/yen0304/pretok"
+Documentation = "https://github.com/yen0304/pretok#readme"
+Repository = "https://github.com/yen0304/pretok"
+Issues = "https://github.com/yen0304/pretok/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pretok"]
+
+# ============================================================================
+# Ruff Configuration
+# ============================================================================
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "ARG",    # flake8-unused-arguments
+    "SIM",    # flake8-simplify
+    "TCH",    # flake8-type-checking
+    "PTH",    # flake8-use-pathlib
+    "RUF",    # Ruff-specific rules
+]
+ignore = [
+    "E501",   # line length handled by formatter
+    "TC001",  # move app imports into TYPE_CHECKING - often needed at runtime
+    "TC003",  # move stdlib imports into TYPE_CHECKING - often needed at runtime
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pretok"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ARG001", "ARG002", "RUF001", "TCH"]  # Unused arguments OK in tests, allow ambiguous unicode, relax type checking imports
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+# ============================================================================
+# Mypy Configuration
+# ============================================================================
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+follow_imports = "normal"
+show_error_codes = true
+show_column_numbers = true
+
+[[tool.mypy.overrides]]
+module = [
+    "fasttext.*",
+    "langdetect.*",
+    "transformers.*",
+    "torch.*",
+    "sentencepiece.*",
+    "deepl.*",
+    "redis.*",
+]
+ignore_missing_imports = true
+
+# ============================================================================
+# Pytest Configuration
+# ============================================================================
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "requires_gpu: marks tests that require GPU",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+# ============================================================================
+# Coverage Configuration
+# ============================================================================
+[tool.coverage.run]
+source = ["src/pretok"]
+branch = true
+omit = ["*/tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "@abstractmethod",
+]
+show_missing = true
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.151.4",
+    "langdetect>=1.0.9",
+    "mypy>=1.19.1",
+    "openai>=2.16.0",
+    "pre-commit>=4.5.1",
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.14.14",
+    "types-pyyaml>=6.0.12.20250915",
+]
+

@@ -1,0 +1,76 @@
+site_name: pretok
+site_description: Universal pre-token language adaptation layer for text-based LLMs
+site_url: https://github.com/yen0304/pretok
+repo_url: https://github.com/yen0304/pretok
+repo_name: yen0304/pretok
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: true
+            show_root_heading: true
+            heading_level: 2
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - tables
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+      - Configuration: getting-started/configuration.md
+  - User Guide:
+      - Pipeline: user-guide/pipeline.md
+      - Language Detection: user-guide/detection.md
+      - Translation Backends: user-guide/translation.md
+      - Segment Processing: user-guide/segments.md
+      - Model Capabilities: user-guide/capabilities.md
+  - API Reference:
+      - Pipeline: api/pipeline.md
+      - Detection: api/detection.md
+      - Translation: api/translation.md
+      - Segments: api/segments.md
+      - Configuration: api/config.md
+  - Development:
+      - Contributing: development/contributing.md
+      - Architecture: development/architecture.md
+      - Changelog: development/changelog.md
