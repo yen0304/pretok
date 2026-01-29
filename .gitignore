@@ -5,6 +5,9 @@ openspec/
 #github
 .github/prompts/
 
+# PyPI credentials (never commit!)
+.pypirc
+
 # Logs
 *.log
 
