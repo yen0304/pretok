@@ -312,3 +312,114 @@ class TestGetDefaultConfig:
         assert isinstance(config, PretokConfig)
         assert config.pipeline.default_detector == "langdetect"
         assert config.pipeline.cache_enabled is True
+
+
+class TestDeepLTranslatorConfig:
+    """Tests for DeepL translator configuration."""
+
+    def test_default_config(self) -> None:
+        """Test default DeepL config."""
+        from pretok.config.schema import DeepLTranslatorConfig
+
+        config = DeepLTranslatorConfig()
+        assert config.formality == "default"
+        assert config.use_free_api is False
+
+    def test_formality_validation(self) -> None:
+        """Test formality validation."""
+        from pretok.config.schema import DeepLTranslatorConfig
+
+        # Valid values
+        DeepLTranslatorConfig(formality="more")
+        DeepLTranslatorConfig(formality="less")
+        DeepLTranslatorConfig(formality="default")
+
+        # Invalid value
+        with pytest.raises(ValueError, match="formality must be one of"):
+            DeepLTranslatorConfig(formality="invalid")
+
+    def test_get_api_key_from_config(self) -> None:
+        """Test getting API key from config."""
+        from pretok.config.schema import DeepLTranslatorConfig
+
+        config = DeepLTranslatorConfig(api_key="test-key")
+        assert config.get_api_key() == "test-key"
+
+    def test_get_api_key_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test getting API key from environment."""
+        from pretok.config.schema import DeepLTranslatorConfig
+
+        monkeypatch.setenv("DEEPL_API_KEY", "env-key")
+        config = DeepLTranslatorConfig()
+        assert config.get_api_key() == "env-key"
+
+
+class TestLLMTranslatorConfigApiKey:
+    """Tests for LLM translator API key handling."""
+
+    def test_get_api_key_from_config(self) -> None:
+        """Test getting API key from config."""
+        config = LLMTranslatorConfig(
+            base_url="https://api.openai.com/v1",
+            model="gpt-4",
+            api_key="config-key",
+        )
+        assert config.get_api_key() == "config-key"
+
+    def test_get_api_key_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test getting API key from environment."""
+        monkeypatch.setenv("OPENAI_API_KEY", "env-key")
+        config = LLMTranslatorConfig(
+            base_url="https://api.openai.com/v1",
+            model="gpt-4",
+        )
+        assert config.get_api_key() == "env-key"
+
+
+class TestModelsConfig:
+    """Tests for models configuration."""
+
+    def test_get_capability_default(self) -> None:
+        """Test getting default model capability."""
+        from pretok.config import ModelsConfig
+
+        config = ModelsConfig()
+        cap = config.get_capability("unknown-model")
+        assert cap.primary_language == "en"
+
+    def test_get_capability_custom(self) -> None:
+        """Test getting custom model capability."""
+        from pretok.config import ModelCapabilityConfig, ModelsConfig
+
+        config = ModelsConfig(
+            default=ModelCapabilityConfig(),
+            **{"gpt-4": {"supported_languages": ["en", "zh"], "primary_language": "en"}},
+        )
+        cap = config.get_capability("gpt-4")
+        assert "zh" in cap.supported_languages
+
+
+class TestModelCapabilityConfig:
+    """Tests for model capability configuration."""
+
+    def test_primary_added_to_supported(self) -> None:
+        """Test that primary language is added to supported if not present."""
+        from pretok.config import ModelCapabilityConfig
+
+        cap = ModelCapabilityConfig(supported_languages=["zh"], primary_language="en")
+        # Primary should be auto-added
+        assert "en" in cap.supported_languages
+        assert "zh" in cap.supported_languages
+
+
+class TestPretokConfigToDict:
+    """Tests for PretokConfig.to_dict method."""
+
+    def test_to_dict(self) -> None:
+        """Test converting config to dictionary."""
+        config = PretokConfig()
+        result = config.to_dict()
+        assert isinstance(result, dict)
+        assert "pipeline" in result
+        assert "detection" in result
+        assert "translation" in result

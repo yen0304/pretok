@@ -288,3 +288,111 @@ Done."""
         # Main goal is not to break parsing
         _ = [s for s in segments if s.type == SegmentType.JSON]  # Check if JSON detected
         assert segments_to_text(segments) == text
+
+
+class TestLexerAdditionalCoverage:
+    """Additional tests to improve lexer coverage."""
+
+    def test_lex_with_config(self) -> None:
+        """Test lexer with custom config."""
+        from pretok.config import SegmentConfig
+
+        config = SegmentConfig(code_fence_pattern="```")
+        lexer = PromptLexer(config=config)
+        text = "```code```"
+        segments = lexer.lex(text)
+        assert segments_to_text(segments) == text
+
+    def test_lex_no_format_hint_all_patterns(self) -> None:
+        """Test lexer without format hint includes all patterns."""
+        lexer = PromptLexer(format_hint=None)
+        # Should not raise
+        text = "<|im_start|>user\nHello<|im_end|>"
+        segments = lexer.lex(text)
+        assert len(segments) > 0
+
+    def test_detect_llama_format(self) -> None:
+        """Test detecting Llama format with specific markers."""
+        text = "<|begin_of_text|>Hello"
+        assert detect_prompt_format(text) == "llama"
+
+    def test_detect_mistral_format(self) -> None:
+        """Test detecting Mistral format."""
+        text = "[INST] Question [/INST] Answer"
+        # Note: Mistral and Llama2 share markers, should detect one of them
+        result = detect_prompt_format(text)
+        assert result in ("llama2", "mistral")
+
+    def test_merge_adjacent_text_empty(self) -> None:
+        """Test _merge_adjacent_text with empty input."""
+        lexer = PromptLexer()
+        result = lexer._merge_adjacent_text([])
+        assert result == []
+
+    def test_lex_url_pattern(self) -> None:
+        """Test lexer recognizes URL pattern."""
+        lexer = PromptLexer()
+        text = "Check https://example.com for info"
+        segments = lexer.lex(text)
+        assert segments_to_text(segments) == text
+        # URL should be preserved as text or specific type
+        assert any("https://example.com" in s.content for s in segments)
+
+    def test_lex_custom_markers_with_regex(self) -> None:
+        """Test custom markers with is_regex=True."""
+        from pretok.config import SegmentConfig
+        from pretok.config.schema import CustomMarkerConfig
+
+        custom_marker = CustomMarkerConfig(
+            pattern=r"\$\{.*?\}",  # Match ${...}
+            type="CONTROL_TOKEN",
+            is_regex=True,
+        )
+        config = SegmentConfig(custom_markers=[custom_marker])
+        lexer = PromptLexer(config=config)
+        text = "Hello ${variable} world"
+        segments = lexer.lex(text)
+        assert segments_to_text(segments) == text
+
+    def test_lex_custom_markers_without_regex(self) -> None:
+        """Test custom markers with is_regex=False (literal)."""
+        from pretok.config import SegmentConfig
+        from pretok.config.schema import CustomMarkerConfig
+
+        custom_marker = CustomMarkerConfig(
+            pattern="<<CUSTOM>>",
+            type="DELIMITER",
+            is_regex=False,
+        )
+        config = SegmentConfig(custom_markers=[custom_marker])
+        lexer = PromptLexer(config=config)
+        text = "Before <<CUSTOM>> After"
+        segments = lexer.lex(text)
+        # Should have delimiter segment
+        delim_segs = [s for s in segments if s.type == SegmentType.DELIMITER]
+        assert len(delim_segs) > 0
+
+    def test_detect_alpaca_format(self) -> None:
+        """Test detecting Alpaca format."""
+        text = "### Instruction:\nDo something\n### Response:\nDone"
+        assert detect_prompt_format(text) == "alpaca"
+
+    def test_detect_vicuna_format(self) -> None:
+        """Test detecting Vicuna format."""
+        text = "USER: Hello\nASSISTANT: Hi there"
+        assert detect_prompt_format(text) == "vicuna"
+
+    def test_detect_unknown_format(self) -> None:
+        """Test detecting unknown format returns None."""
+        text = "Just plain text without any format markers"
+        assert detect_prompt_format(text) is None
+
+    def test_lex_adjacent_text_merge(self) -> None:
+        """Test that adjacent text segments get merged."""
+        lexer = PromptLexer()
+        # Plain text should become a single segment
+        text = "Hello world this is a test"
+        segments = lexer.lex(text)
+        text_segments = [s for s in segments if s.type == SegmentType.TEXT]
+        assert len(text_segments) == 1
+        assert text_segments[0].content == text
