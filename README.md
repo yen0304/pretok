@@ -1,11 +1,17 @@
-# pretok
+<p align="center">
+  <img src="logo.png" alt="pretok logo" width="200">
+</p>
 
-[![CI](https://github.com/yen0304/pretok/actions/workflows/ci.yml/badge.svg)](https://github.com/yen0304/pretok/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/yen0304/pretok/branch/main/graph/badge.svg)](https://codecov.io/gh/yen0304/pretok)
-[![PyPI version](https://badge.fury.io/py/pretok.svg)](https://badge.fury.io/py/pretok)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+<h1 align="center">pretok</h1>
+
+<p align="center">
+  <a href="https://github.com/yen0304/pretok/actions/workflows/ci.yml"><img src="https://github.com/yen0304/pretok/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://codecov.io/gh/yen0304/pretok"><img src="https://codecov.io/gh/yen0304/pretok/branch/main/graph/badge.svg" alt="codecov"></a>
+  <a href="https://pypi.org/project/pretok/"><img src="https://img.shields.io/pypi/v/pretok.svg" alt="PyPI version"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python 3.11+"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
+</p>
 
 > Universal pre-token language adaptation layer for text-based LLMs.
 
