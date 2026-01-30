@@ -1,17 +1,19 @@
 # Configuration API
 
-::: pretok.config.schema.PretokConfig
+::: pretok.config.PretokConfig
 
-::: pretok.config.schema.PipelineConfig
+::: pretok.config.PipelineConfig
 
-::: pretok.config.schema.DetectionConfig
+::: pretok.config.DetectionConfig
 
-::: pretok.config.schema.TranslationConfig
+::: pretok.config.TranslationConfig
 
-::: pretok.config.schema.CacheConfig
+::: pretok.config.LLMTranslatorConfig
 
-::: pretok.config.schema.SegmentConfig
+::: pretok.config.CacheConfig
 
-::: pretok.config.loader.load_config
+::: pretok.config.SegmentConfig
 
-::: pretok.config.loader.ConfigurationError
+::: pretok.config.load_config
+
+::: pretok.config.ConfigurationError

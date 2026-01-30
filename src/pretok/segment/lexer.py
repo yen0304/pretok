@@ -103,8 +103,8 @@ class PromptLexer:
     """Lexer for parsing prompts into segments.
 
     The lexer identifies different types of content in a prompt:
-    - Role markers (e.g., <|user|>, [INST])
-    - Control tokens (e.g., <s>, </s>)
+    - Role markers (e.g., `<|user|>`, `[INST]`)
+    - Control tokens (e.g., `<s>`, `</s>`)
     - Code blocks
     - JSON content
     - Regular text
@@ -113,7 +113,7 @@ class PromptLexer:
         >>> lexer = PromptLexer()
         >>> segments = lexer.lex("<|im_start|>user\\nHello!<|im_end|>")
         >>> [s.type for s in segments]
-        [SegmentType.ROLE_MARKER, SegmentType.TEXT, SegmentType.ROLE_MARKER]
+        [`SegmentType.ROLE_MARKER`, `SegmentType.TEXT`, `SegmentType.ROLE_MARKER`]
     """
 
     def __init__(
