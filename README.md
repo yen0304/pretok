@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" alt="pretok logo" width="200">
+  <img src="https://raw.githubusercontent.com/yen0304/pretok/main/logo.png" alt="pretok logo" width="640">
 </p>
 
 <h1 align="center">pretok</h1>

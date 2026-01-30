@@ -64,6 +64,7 @@ nav:
       - Translation Backends: user-guide/translation.md
       - Segment Processing: user-guide/segments.md
       - Model Capabilities: user-guide/capabilities.md
+      - Model Comparison: user-guide/model-comparison.md
   - API Reference:
       - Pipeline: api/pipeline.md
       - Detection: api/detection.md
