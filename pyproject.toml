@@ -1,6 +1,6 @@
 [project]
 name = "pretok"
-version = "0.1.0"
+version = "0.1.1"
 description = "Universal pre-token language adaptation layer for text-based LLMs"
 readme = "README.md"
 authors = [

@@ -15,27 +15,25 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Default system prompt for translation
-DEFAULT_SYSTEM_PROMPT = """You are a professional translator. Your task is to translate text accurately while:
-1. Preserving the original meaning and tone
-2. Using natural expressions in the target language
-3. Maintaining any formatting, punctuation, and special characters
-4. NOT adding explanations or notes - only output the translation"""
+DEFAULT_SYSTEM_PROMPT = """You are a translation engine. Output ONLY the translated text, nothing else.
+
+Rules:
+- Translate accurately while preserving meaning and tone
+- Keep all formatting: newlines, spaces, punctuation exactly as they appear
+- Do NOT add any notes, explanations, comments, or metadata
+- Do NOT add phrases like "Here is the translation" or "Note:"
+- If the input has leading/trailing whitespace, preserve it in the output
+- Output the translation directly, with no preamble"""
 
 # Default user prompt template
-DEFAULT_USER_PROMPT = """Translate the following text from {source_language} to {target_language}.
+DEFAULT_USER_PROMPT = """Translate from {source_language} to {target_language}:
 
-Text to translate:
-{text}
-
-Translation:"""
+{text}"""
 
 # Default user prompt when source language is unknown
-DEFAULT_USER_PROMPT_AUTO = """Translate the following text to {target_language}.
+DEFAULT_USER_PROMPT_AUTO = """Translate to {target_language}:
 
-Text to translate:
-{text}
-
-Translation:"""
+{text}"""
 
 
 class LLMTranslator(BaseTranslator):
@@ -188,7 +186,9 @@ class LLMTranslator(BaseTranslator):
             )
 
             translated_text = response.choices[0].message.content or ""
-            translated_text = translated_text.strip()
+
+            # Clean up the response - remove common LLM artifacts
+            translated_text = self._clean_translation(translated_text, text)
 
             return TranslationResult(
                 source_text=text,
@@ -309,3 +309,62 @@ class LLMTranslator(BaseTranslator):
             "gl": "Galician",
         }
         return language_names.get(code.lower(), code)
+
+    def _clean_translation(self, translated: str, original: str) -> str:
+        """Clean up LLM translation output.
+
+        Removes common artifacts like notes, explanations, and preambles
+        that LLMs sometimes add despite instructions.
+
+        Args:
+            translated: Raw translation from LLM
+            original: Original text (to preserve whitespace patterns)
+
+        Returns:
+            Cleaned translation text
+        """
+        import re
+
+        result = translated
+
+        # Remove common preamble patterns
+        preamble_patterns = [
+            r"^(?:Here(?:'s| is) (?:the )?translation:?\s*)",
+            r"^(?:Translation:?\s*)",
+            r"^(?:Translated(?: text)?:?\s*)",
+            r"^(?:In English:?\s*)",
+        ]
+        for pattern in preamble_patterns:
+            result = re.sub(pattern, "", result, flags=re.IGNORECASE)
+
+        # Remove trailing notes/explanations in parentheses
+        # Match patterns like "(Note: ...)" or "(I translated ...)" at the end
+        result = re.sub(
+            r"\s*\((?:Note|I translated|Translation note|Translator'?s? note)[^)]*\)\s*$",
+            "",
+            result,
+            flags=re.IGNORECASE,
+        )
+
+        # Remove trailing notes after newlines
+        # Handles cases like "\n\nNote: I translated..."
+        result = re.sub(
+            r"\n+(?:Note|N\.B\.|PS|P\.S\.):?\s+.*$",
+            "",
+            result,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+
+        # Preserve original whitespace structure
+        # If original started with newline, ensure result does too
+        original_starts_with_newline = original.startswith("\n")
+        original_ends_with_newline = original.endswith("\n")
+
+        result = result.strip()
+
+        if original_starts_with_newline and not result.startswith("\n"):
+            result = "\n" + result
+        if original_ends_with_newline and not result.endswith("\n"):
+            result = result + "\n"
+
+        return result
