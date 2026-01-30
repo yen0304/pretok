@@ -1,9 +1,9 @@
 # Segments API
 
-::: pretok.segment.models.Segment
+::: pretok.segment.Segment
 
-::: pretok.segment.models.SegmentType
+::: pretok.segment.SegmentType
 
-::: pretok.segment.parser.PromptParser
+::: pretok.segment.PromptLexer
 
-::: pretok.segment.processor.SegmentProcessor
+::: pretok.segment.lex_prompt
