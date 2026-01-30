@@ -852,9 +852,7 @@ class TestLLMTranslatorCleanTranslation:
         )
         translator = LLMTranslator(config)
 
-        result = translator._clean_translation(
-            "你好 (Note: I translated this literally)", "Hello"
-        )
+        result = translator._clean_translation("你好 (Note: I translated this literally)", "Hello")
         assert result == "你好"
 
         result = translator._clean_translation(
@@ -862,9 +860,7 @@ class TestLLMTranslatorCleanTranslation:
         )
         assert result == "你好世界"
 
-        result = translator._clean_translation(
-            "你好 (Translator's note: formal version)", "Hello"
-        )
+        result = translator._clean_translation("你好 (Translator's note: formal version)", "Hello")
         assert result == "你好"
 
     def test_clean_removes_trailing_notes_newline(self, mock_openai) -> None:
