@@ -1,13 +1,13 @@
 # Detection API
 
-::: pretok.detection.base.LanguageDetector
+::: pretok.detection.LanguageDetector
     options:
       show_source: true
 
-::: pretok.detection.base.DetectionResult
+::: pretok.detection.DetectionResult
 
-::: pretok.detection.fasttext.FastTextDetector
+::: pretok.detection.fasttext_backend.FastTextDetector
 
-::: pretok.detection.langdetect.LangDetectDetector
+::: pretok.detection.langdetect_backend.LangDetectDetector
 
 ::: pretok.detection.composite.CompositeDetector
