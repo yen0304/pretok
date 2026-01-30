@@ -144,6 +144,18 @@ class LLMTranslatorConfig(BaseModel):
         default=None,
         description="Custom user prompt template with {text}, {source}, {target}",
     )
+    max_tokens: int | None = Field(
+        default=None,
+        ge=1,
+        description="Maximum tokens for API response. If set, overrides max_tokens_multiplier. "
+        "Recommended for thinking models (qwen3, DeepSeek-R1) that need more tokens.",
+    )
+    max_tokens_multiplier: int = Field(
+        default=4,
+        ge=1,
+        description="Multiplier for calculating max_tokens from input length. "
+        "max_tokens = len(text) * multiplier. Ignored if max_tokens is set.",
+    )
 
     def get_api_key(self) -> str | None:
         """Get API key from config or environment."""

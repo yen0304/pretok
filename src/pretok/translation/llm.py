@@ -174,6 +174,18 @@ class LLMTranslator(BaseTranslator):
                 target_language=self._get_language_name(target_language),
             )
 
+        # Calculate max_tokens: use explicit value if set, otherwise use multiplier
+        if self._config.max_tokens is not None:
+            max_tokens = self._config.max_tokens
+        else:
+            max_tokens = len(text) * self._config.max_tokens_multiplier
+
+        logger.debug(
+            "Translation request: text_len=%d, max_tokens=%d",
+            len(text),
+            max_tokens,
+        )
+
         try:
             response = self._client.chat.completions.create(
                 model=self._config.model,
@@ -182,7 +194,7 @@ class LLMTranslator(BaseTranslator):
                     {"role": "user", "content": user_prompt},
                 ],
                 temperature=self._config.temperature,
-                max_tokens=len(text) * 4,  # Allow for expansion
+                max_tokens=max_tokens,
             )
 
             translated_text = response.choices[0].message.content or ""

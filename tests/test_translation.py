@@ -438,6 +438,77 @@ class TestLLMTranslatorAdvanced:
         translator = LLMTranslator(config)
         assert translator.name == "llm:llama3"
 
+    def test_default_max_tokens_multiplier(self, mock_openai) -> None:
+        """Test default max_tokens calculation uses multiplier of 4."""
+        from pretok.config import LLMTranslatorConfig
+        from pretok.translation.llm import LLMTranslator
+
+        config = LLMTranslatorConfig(
+            base_url="https://api.openai.com/v1",
+            model="gpt-4o-mini",
+            api_key="test-key",
+        )
+        translator = LLMTranslator(config)
+        translator.translate("Hello", "zh", "en")
+
+        # Verify max_tokens = len("Hello") * 4 = 20
+        call_kwargs = mock_openai.return_value.chat.completions.create.call_args.kwargs
+        assert call_kwargs["max_tokens"] == 20
+
+    def test_explicit_max_tokens(self, mock_openai) -> None:
+        """Test explicit max_tokens overrides multiplier."""
+        from pretok.config import LLMTranslatorConfig
+        from pretok.translation.llm import LLMTranslator
+
+        config = LLMTranslatorConfig(
+            base_url="https://api.openai.com/v1",
+            model="gpt-4o-mini",
+            api_key="test-key",
+            max_tokens=500,
+        )
+        translator = LLMTranslator(config)
+        translator.translate("Hello", "zh", "en")
+
+        call_kwargs = mock_openai.return_value.chat.completions.create.call_args.kwargs
+        assert call_kwargs["max_tokens"] == 500
+
+    def test_custom_max_tokens_multiplier(self, mock_openai) -> None:
+        """Test custom max_tokens_multiplier for thinking models."""
+        from pretok.config import LLMTranslatorConfig
+        from pretok.translation.llm import LLMTranslator
+
+        config = LLMTranslatorConfig(
+            base_url="https://api.openai.com/v1",
+            model="qwen3:latest",
+            api_key="test-key",
+            max_tokens_multiplier=15,
+        )
+        translator = LLMTranslator(config)
+        translator.translate("Hello", "zh", "en")
+
+        # Verify max_tokens = len("Hello") * 15 = 75
+        call_kwargs = mock_openai.return_value.chat.completions.create.call_args.kwargs
+        assert call_kwargs["max_tokens"] == 75
+
+    def test_max_tokens_takes_precedence_over_multiplier(self, mock_openai) -> None:
+        """Test that max_tokens takes precedence when both are set."""
+        from pretok.config import LLMTranslatorConfig
+        from pretok.translation.llm import LLMTranslator
+
+        config = LLMTranslatorConfig(
+            base_url="https://api.openai.com/v1",
+            model="gpt-4o-mini",
+            api_key="test-key",
+            max_tokens=300,
+            max_tokens_multiplier=100,  # Would be 500 for "Hello"
+        )
+        translator = LLMTranslator(config)
+        translator.translate("Hello", "zh", "en")
+
+        # max_tokens should be 300, not 500
+        call_kwargs = mock_openai.return_value.chat.completions.create.call_args.kwargs
+        assert call_kwargs["max_tokens"] == 300
+
 
 class TestBaseTranslatorValidation:
     """Tests for BaseTranslator validation methods."""
@@ -696,3 +767,239 @@ class TestBaseTranslatorAdvanced:
         translator = TestTranslator()
         assert translator.supports_language("en") is True
         assert translator.supports_language("zh") is True
+
+
+class TestLLMTranslatorCleanTranslation:
+    """Tests for LLMTranslator._clean_translation method."""
+
+    @pytest.fixture
+    def mock_openai(self):
+        """Create mock OpenAI client."""
+        with patch("openai.OpenAI") as mock:
+            mock_response = MagicMock()
+            mock_response.choices = [MagicMock()]
+            mock_response.choices[0].message.content = "翻譯結果"
+            mock_response.model = "gpt-4o-mini"
+            mock_response.usage.prompt_tokens = 10
+            mock_response.usage.completion_tokens = 5
+
+            mock_client = MagicMock()
+            mock_client.chat.completions.create.return_value = mock_response
+            mock.return_value = mock_client
+
+            yield mock
+
+    def test_clean_removes_preamble_heres_translation(self, mock_openai) -> None:
+        """Test removing 'Here is the translation:' preamble."""
+        from pretok.config import LLMTranslatorConfig
+        from pretok.translation.llm import LLMTranslator
+
+        config = LLMTranslatorConfig(
+            base_url="https://api.openai.com/v1",
+            model="gpt-4o-mini",
+            api_key="test-key",
+        )
+        translator = LLMTranslator(config)
+
+        result = translator._clean_translation("Here is the translation: 你好", "Hello")
+        assert result == "你好"
+
+        result = translator._clean_translation("Here's the translation: 你好", "Hello")
+        assert result == "你好"
+
+    def test_clean_removes_translation_prefix(self, mock_openai) -> None:
+        """Test removing 'Translation:' prefix."""
+        from pretok.config import LLMTranslatorConfig
+        from pretok.translation.llm import LLMTranslator
+
+        config = LLMTranslatorConfig(
+            base_url="https://api.openai.com/v1",
+            model="gpt-4o-mini",
+            api_key="test-key",
+        )
+        translator = LLMTranslator(config)
+
+        result = translator._clean_translation("Translation: 你好", "Hello")
+        assert result == "你好"
+
+        result = translator._clean_translation("Translated text: 你好世界", "Hello world")
+        assert result == "你好世界"
+
+    def test_clean_removes_in_english_prefix(self, mock_openai) -> None:
+        """Test removing 'In English:' prefix."""
+        from pretok.config import LLMTranslatorConfig
+        from pretok.translation.llm import LLMTranslator
+
+        config = LLMTranslatorConfig(
+            base_url="https://api.openai.com/v1",
+            model="gpt-4o-mini",
+            api_key="test-key",
+        )
+        translator = LLMTranslator(config)
+
+        result = translator._clean_translation("In English: Hello", "你好")
+        assert result == "Hello"
+
+    def test_clean_removes_trailing_notes_parentheses(self, mock_openai) -> None:
+        """Test removing trailing notes in parentheses."""
+        from pretok.config import LLMTranslatorConfig
+        from pretok.translation.llm import LLMTranslator
+
+        config = LLMTranslatorConfig(
+            base_url="https://api.openai.com/v1",
+            model="gpt-4o-mini",
+            api_key="test-key",
+        )
+        translator = LLMTranslator(config)
+
+        result = translator._clean_translation(
+            "你好 (Note: I translated this literally)", "Hello"
+        )
+        assert result == "你好"
+
+        result = translator._clean_translation(
+            "你好世界 (I translated this as a greeting)", "Hello world"
+        )
+        assert result == "你好世界"
+
+        result = translator._clean_translation(
+            "你好 (Translator's note: formal version)", "Hello"
+        )
+        assert result == "你好"
+
+    def test_clean_removes_trailing_notes_newline(self, mock_openai) -> None:
+        """Test removing trailing notes after newline."""
+        from pretok.config import LLMTranslatorConfig
+        from pretok.translation.llm import LLMTranslator
+
+        config = LLMTranslatorConfig(
+            base_url="https://api.openai.com/v1",
+            model="gpt-4o-mini",
+            api_key="test-key",
+        )
+        translator = LLMTranslator(config)
+
+        result = translator._clean_translation("你好\n\nNote: This is a simple greeting", "Hello")
+        assert result == "你好"
+
+        result = translator._clean_translation("你好\n\nP.S. This is formal", "Hello")
+        assert result == "你好"
+
+    def test_clean_preserves_original_leading_newline(self, mock_openai) -> None:
+        """Test preserving leading newline from original."""
+        from pretok.config import LLMTranslatorConfig
+        from pretok.translation.llm import LLMTranslator
+
+        config = LLMTranslatorConfig(
+            base_url="https://api.openai.com/v1",
+            model="gpt-4o-mini",
+            api_key="test-key",
+        )
+        translator = LLMTranslator(config)
+
+        result = translator._clean_translation("你好", "\nHello")
+        assert result == "\n你好"
+
+    def test_clean_preserves_original_trailing_newline(self, mock_openai) -> None:
+        """Test preserving trailing newline from original."""
+        from pretok.config import LLMTranslatorConfig
+        from pretok.translation.llm import LLMTranslator
+
+        config = LLMTranslatorConfig(
+            base_url="https://api.openai.com/v1",
+            model="gpt-4o-mini",
+            api_key="test-key",
+        )
+        translator = LLMTranslator(config)
+
+        result = translator._clean_translation("你好", "Hello\n")
+        assert result == "你好\n"
+
+    def test_clean_preserves_both_newlines(self, mock_openai) -> None:
+        """Test preserving both leading and trailing newlines."""
+        from pretok.config import LLMTranslatorConfig
+        from pretok.translation.llm import LLMTranslator
+
+        config = LLMTranslatorConfig(
+            base_url="https://api.openai.com/v1",
+            model="gpt-4o-mini",
+            api_key="test-key",
+        )
+        translator = LLMTranslator(config)
+
+        result = translator._clean_translation("你好", "\nHello\n")
+        assert result == "\n你好\n"
+
+
+class TestLLMTranslatorBatchErrorHandling:
+    """Tests for LLMTranslator.translate_batch error handling."""
+
+    @pytest.fixture
+    def mock_openai(self):
+        """Create mock OpenAI client."""
+        with patch("openai.OpenAI") as mock:
+            mock_response = MagicMock()
+            mock_response.choices = [MagicMock()]
+            mock_response.choices[0].message.content = "翻譯結果"
+            mock_response.model = "gpt-4o-mini"
+            mock_response.usage.prompt_tokens = 10
+            mock_response.usage.completion_tokens = 5
+
+            mock_client = MagicMock()
+            mock_client.chat.completions.create.return_value = mock_response
+            mock.return_value = mock_client
+
+            yield mock
+
+    def test_translate_batch_with_error(self, mock_openai) -> None:
+        """Test translate_batch handles errors gracefully."""
+        from pretok.config import LLMTranslatorConfig
+        from pretok.translation.llm import LLMTranslator
+
+        config = LLMTranslatorConfig(
+            base_url="https://api.openai.com/v1",
+            model="gpt-4o-mini",
+            api_key="test-key",
+        )
+        translator = LLMTranslator(config)
+
+        # Make the second call fail
+        mock_client = mock_openai.return_value
+        mock_client.chat.completions.create.side_effect = [
+            mock_client.chat.completions.create.return_value,  # First succeeds
+            Exception("API Error"),  # Second fails
+            mock_client.chat.completions.create.return_value,  # Third succeeds
+        ]
+
+        results = translator.translate_batch(["Hello", "World", "Test"], "zh", "en")
+
+        assert len(results) == 3
+        # First and third should be translated
+        assert results[0].translated_text == "翻譯結果"
+        # Second should be original (due to error)
+        assert results[1].translated_text == "World"
+        assert results[1].source_language == "en"
+        assert results[2].translated_text == "翻譯結果"
+
+    def test_translate_batch_all_errors(self, mock_openai) -> None:
+        """Test translate_batch when all translations fail."""
+        from pretok.config import LLMTranslatorConfig
+        from pretok.translation.llm import LLMTranslator
+
+        config = LLMTranslatorConfig(
+            base_url="https://api.openai.com/v1",
+            model="gpt-4o-mini",
+            api_key="test-key",
+        )
+        translator = LLMTranslator(config)
+
+        # Make all calls fail
+        mock_openai.return_value.chat.completions.create.side_effect = Exception("API Error")
+
+        results = translator.translate_batch(["Hello", "World"], "zh")
+
+        assert len(results) == 2
+        # All should be original text
+        assert results[0].translated_text == "Hello"
+        assert results[0].source_language == "unknown"
+        assert results[1].translated_text == "World"
