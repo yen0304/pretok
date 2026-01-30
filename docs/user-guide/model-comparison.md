@@ -3,7 +3,7 @@
 This document records the performance of different Ollama models in pretok translation tasks.
 
 > **Test Date**: 2026-01-30  
-> **pretok Version**: 0.1.1
+> **pretok Version**: 0.1.2
 
 ## Tested Models
 
